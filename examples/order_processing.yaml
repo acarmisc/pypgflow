@@ -1,0 +1,148 @@
+workflow:
+  name: "order_processing"
+  version: "1.0"
+  metadata:
+    description: "E-commerce order processing workflow"
+    category: "commerce"
+    
+states:
+  - name: "pending"
+    initial: true
+    metadata:
+      display_name: "In Attesa"
+      color: "#orange"
+      description: "Order received and pending payment"
+  
+  - name: "paid"
+    metadata:
+      display_name: "Pagato"
+      color: "#blue"
+      description: "Payment confirmed"
+  
+  - name: "processing"
+    metadata:
+      display_name: "In Lavorazione"
+      color: "#purple"
+      description: "Order being prepared"
+  
+  - name: "shipped"
+    metadata:
+      display_name: "Spedito"
+      color: "#teal"
+      description: "Order shipped to customer"
+      
+  - name: "delivered"
+    final: true
+    metadata:
+      display_name: "Consegnato"
+      color: "#green"
+      description: "Order delivered successfully"
+  
+  - name: "cancelled"
+    final: true
+    metadata:
+      display_name: "Annullato"
+      color: "#red"
+      description: "Order cancelled"
+      
+  - name: "returned"
+    final: true
+    metadata:
+      display_name: "Reso"
+      color: "#gray"
+      description: "Order returned by customer"
+
+transitions:
+  - from: "pending"
+    to: "paid"
+    name: "payment_confirmed"
+    context:
+      # Informazioni per l'applicazione e-commerce
+      supported_payment_methods: ["credit_card", "paypal", "bank_transfer"]
+      requires_transaction_id: true
+      minimum_amount: 0.01
+    metadata:
+      display_name: "Conferma Pagamento"
+      
+  - from: "pending"
+    to: "cancelled"
+    name: "payment_failed"
+    context:
+      # Context informativo - non validato
+      common_failure_reasons: ["insufficient_funds", "expired_card", "declined"]
+      max_retry_attempts: 3
+      error_logging_enabled: true
+    metadata:
+      display_name: "Pagamento Fallito"
+      
+  - from: "paid"
+    to: "processing"
+    name: "start_processing"
+    context:
+      # Informazioni per inventory management
+      inventory_check_required: true
+      warehouse_locations: ["north", "south", "east", "west"]
+      priority_levels: ["standard", "express", "urgent"]
+    metadata:
+      display_name: "Inizia Lavorazione"
+      
+  - from: "processing"
+    to: "shipped"
+    name: "ship_order"
+    context:
+      # Context per shipping integration
+      supported_carriers: ["ups", "fedex", "dhl", "usps"]
+      tracking_required: true
+      shipping_label_format: "pdf"
+      estimated_delivery_calculation: true
+    metadata:
+      display_name: "Spedisci Ordine"
+      
+  - from: "shipped"
+    to: "delivered"
+    name: "confirm_delivery"
+    context:
+      # Informazioni per delivery tracking
+      confirmation_methods: ["signature", "photo", "gps"]
+      customer_notification_required: true
+      delivery_window_tracking: true
+    metadata:
+      display_name: "Conferma Consegna"
+      
+  - from: "delivered"
+    to: "returned"
+    name: "process_return"
+    conditions:
+      return_window_days: 30
+    context:
+      # Context per return management
+      valid_return_reasons: ["defective", "wrong_item", "not_satisfied", "damaged"]
+      return_window_days: 30
+      requires_return_authorization: true
+      condition_check_required: true
+    metadata:
+      display_name: "Elabora Reso"
+      
+  - from: "pending"
+    to: "cancelled"
+    name: "cancel_order"
+    context:
+      # Informazioni cancellazione semplice
+      common_reasons: ["customer_request", "inventory_unavailable", "payment_issue"]
+      refund_processing_time: "3-5 business days"
+    metadata:
+      display_name: "Annulla Ordine"
+      
+  - from: "paid"
+    to: "cancelled"
+    name: "cancel_paid_order"
+    conditions:
+      requires_approval: true
+    context:
+      # Context per cancellazione ordini pagati
+      requires_manager_approval: true
+      refund_methods: ["original_payment", "store_credit", "check"]
+      cancellation_fee_policy: "variable based on timing"
+      approval_workflow_required: true
+    metadata:
+      display_name: "Annulla Ordine Pagato"

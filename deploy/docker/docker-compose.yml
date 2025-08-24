@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: pypgflow
+      POSTGRES_USER: pypgflow
+      POSTGRES_PASSWORD: pypgflow123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../database/init:/docker-entrypoint-initdb.d
+      - ../../database/schemas:/schemas
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pypgflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgrest:
+    image: postgrest/postgrest:v11.2.2
+    environment:
+      PGRST_DB_URI: postgres://pypgflow:pypgflow123@postgres:5432/pypgflow
+      PGRST_DB_SCHEMAS: api
+      PGRST_DB_ANON_ROLE: anonymous
+      PGRST_JWT_SECRET: your-jwt-secret-here
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3000
+      # Enable CORS for Swagger UI
+      PGRST_SERVER_CORS_ALLOWED_ORIGINS: "*"
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    environment:
+      # Use host.docker.internal to reach the host from container
+      SWAGGER_JSON_URL: http://host.docker.internal:3000/
+      API_URL: http://localhost:3000/
+      BASE_URL: /
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgrest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pypgflow.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  cli:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.cli
+    volumes:
+      - ../../:/app
+      - ../../examples:/examples
+    environment:
+      DATABASE_URL: postgres://pypgflow:pypgflow123@postgres:5432/pypgflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - cli
+
+volumes:
+  postgres_data:
+  pgadmin_data:

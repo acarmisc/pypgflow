@@ -1,0 +1,127 @@
+workflow:
+  name: "fraud_detection"
+  version: "1.0"
+  metadata:
+    description: "Fraud detection workflow for financial transactions"
+    category: "security"
+    
+states:
+  - name: "new"
+    initial: true
+    metadata:
+      display_name: "Nuovo"
+      color: "#orange"
+      description: "Transaction flagged for review"
+  
+  - name: "investigating"
+    metadata:
+      display_name: "In Analisi"
+      color: "#blue"
+      description: "Under investigation by security team"
+      requires_role: "security_analyst"
+  
+  - name: "pending_approval"
+    metadata:
+      display_name: "In Approvazione"
+      color: "#yellow"
+      description: "Waiting for manager approval"
+      requires_role: "manager"
+  
+  - name: "approved"
+    final: true
+    metadata:
+      display_name: "Approvato"
+      color: "#green"
+      description: "Transaction approved and released"
+  
+  - name: "rejected"
+    final: true
+    metadata:
+      display_name: "Rifiutato"
+      color: "#red"
+      description: "Transaction rejected and blocked"
+      
+  - name: "cancelled"
+    final: true
+    metadata:
+      display_name: "Annullato"
+      color: "#gray"
+      description: "Investigation cancelled"
+
+transitions:
+  - from: "new"
+    to: "investigating"
+    name: "start_investigation"
+    context:
+      # Informazioni di contesto per l'applicazione
+      typical_analyst_levels: ["junior", "senior", "expert"]
+      default_priority: "medium"
+    metadata:
+      display_name: "Inizia Indagine"
+      
+  - from: "investigating"
+    to: "pending_approval"
+    name: "request_approval"
+    conditions:
+      requires_documentation: true
+    context:
+      # Contesto per l'applicazione - nessuna validazione
+      typical_amount_threshold: 1000
+      suggested_evidence_score_range: "7-10"
+      business_rule: "amounts over 1000 require manager review"
+    metadata:
+      display_name: "Richiedi Approvazione"
+      
+  - from: "investigating"
+    to: "approved"
+    name: "auto_approve"
+    conditions:
+      amount_threshold: 1000
+      risk_score: "low"
+    context:
+      # Informazioni per l'applicazione
+      max_auto_approval_amount: 999
+      allowed_risk_scores: ["low", "very_low"]
+      automation_enabled: true
+    metadata:
+      display_name: "Approvazione Automatica"
+      
+  - from: "investigating"
+    to: "rejected"
+    name: "reject_suspicious"
+    context:
+      # Context informativo - non validato
+      high_risk_indicators: ["unusual_pattern", "blacklisted_merchant", "velocity_check_failed"]
+      requires_detailed_reason: true
+    metadata:
+      display_name: "Rifiuta Sospetto"
+      
+  - from: "pending_approval"
+    to: "approved"
+    name: "manager_approve"
+    context:
+      # Informazioni per l'applicazione integratrice
+      authorized_manager_levels: ["senior_manager", "director", "vp"]
+      approval_tracking_required: true
+    metadata:
+      display_name: "Approvazione Manager"
+      
+  - from: "pending_approval"
+    to: "rejected"
+    name: "manager_reject"
+    context:
+      # Context per business logic dell'app
+      rejection_categories: ["insufficient_evidence", "policy_violation", "risk_too_high"]
+      requires_manager_signature: true
+    metadata:
+      display_name: "Rifiuto Manager"
+      
+  - from: "*"
+    to: "cancelled"
+    name: "cancel"
+    context:
+      # Informazioni di contesto semplici
+      common_reasons: ["customer_request", "system_error", "duplicate"]
+      audit_required: true
+    metadata:
+      display_name: "Annulla"
