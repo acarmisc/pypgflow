@@ -1,0 +1,18 @@
+{{- if .Values.swaggerui.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pypgflow.fullname" . }}-swaggerui
+  labels:
+    {{- include "pypgflow.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.swaggerui.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "pypgflow.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: swaggerui
+{{- end }}

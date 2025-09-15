@@ -1,0 +1,35 @@
+{{- if .Values.swaggerui.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pypgflow.fullname" . }}-swaggerui
+  labels:
+    {{- include "pypgflow.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "pypgflow.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: swaggerui
+  template:
+    metadata:
+      labels:
+        {{- include "pypgflow.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: swaggerui
+    spec:
+      containers:
+        - name: swaggerui
+          image: "{{ .Values.swaggerui.image }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: SWAGGER_JSON_URL
+              value: {{ .Values.swaggerui.swaggerJsonUrl }}
+            - name: API_URL
+              value: {{ .Values.swaggerui.apiUrl }}
+            - name: BASE_URL
+              value: {{ .Values.swaggerui.baseUrl }}
+{{- end }}

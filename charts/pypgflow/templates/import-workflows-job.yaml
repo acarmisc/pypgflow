@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "pypgflow.fullname" . }}-import-workflows
+  labels:
+    {{- include "pypgflow.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      name: {{ include "pypgflow.fullname" . }}-import-workflows
+      labels:
+        {{- include "pypgflow.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: importer
+          image: "{{ .Values.cli.image.repository }}:{{ .Values.cli.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.cli.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              for file in /workflows/*.yaml; do
+                pypgflow import-workflow "$file"
+              done
+          env:
+            - name: DATABASE_URL
+              value: {{ include "pypgflow.databaseUri" . | quote }}
+          volumeMounts:
+            - name: workflows
+              mountPath: /workflows
+      volumes:
+        - name: workflows
+          configMap:
+            name: {{ include "pypgflow.fullname" . }}-workflows

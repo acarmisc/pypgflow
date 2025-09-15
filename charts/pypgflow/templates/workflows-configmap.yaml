@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "pypgflow.fullname" . }}-workflows
+  labels:
+    {{- include "pypgflow.labels" . | nindent 4 }}
+data:
+{{ (.Files.Glob "examples/*.yaml").AsConfig | indent 2 }}

@@ -1,0 +1,47 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "pypgflow.fullname" . }}-postgresql
+  labels:
+    {{- include "pypgflow.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "pypgflow.fullname" . }}-postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "pypgflow.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql
+  template:
+    metadata:
+      labels:
+        {{- include "pypgflow.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: "{{ .Values.postgresql.image }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgresql
+              containerPort: {{ .Values.postgresql.port }}
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.user }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgresql.password }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.database }}
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgresql-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+{{- end }}
