@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pypgflow.fullname" . }}-postgrest
+  labels:
+    {{- include "pypgflow.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "pypgflow.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgrest
+  template:
+    metadata:
+      labels:
+        {{- include "pypgflow.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgrest
+    spec:
+      containers:
+        - name: postgrest
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          env:
+            - name: PGRST_DB_URI
+              value: {{ include "pypgflow.databaseUri" . | quote }}
+            - name: PGRST_DB_SCHEMAS
+              value: "{{ .Values.postgrest.dbSchemas }}"
+            - name: PGRST_DB_ANON_ROLE
+              value: "{{ .Values.postgrest.dbAnonRole }}"
+            - name: PGRST_JWT_SECRET
+              value: "{{ .Values.postgrest.jwtSecret }}"
+            - name: PGRST_OPENAPI_SERVER_PROXY_URI
+              value: "{{ .Values.postgrest.openapiServerProxyUri }}"
+            - name: PGRST_SERVER_CORS_ALLOWED_ORIGINS
+              value: "{{ .Values.postgrest.serverCorsAllowedOrigins }}"

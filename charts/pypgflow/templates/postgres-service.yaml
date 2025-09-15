@@ -1,0 +1,18 @@
+{{- if .Values.postgresql.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "pypgflow.fullname" . }}-postgresql
+  labels:
+    {{- include "pypgflow.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.postgresql.port }}
+      targetPort: postgresql
+      protocol: TCP
+      name: postgresql
+  selector:
+    {{- include "pypgflow.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+{{- end }}
