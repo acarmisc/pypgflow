@@ -81,6 +81,14 @@ tolerations: []
 
 affinity: {}
 
+# CLI configuration
+cli:
+  image:
+    repository: ghcr.io/your-repo/pypgflow-cli
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+
 # PostgreSQL configuration
 postgresql:
   # -- Enable or disable the PostgreSQL dependency.
